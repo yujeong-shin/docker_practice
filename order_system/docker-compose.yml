@@ -1,0 +1,40 @@
+# docker-compose 파일 format에 대한 버전
+version: "3.8"
+services:
+  mydb:
+    image: mariadb
+    environment:
+      - MARIADB_ROOT_PASSWORD=1234
+      # 스키마를 동시에 만들 수 있는 옵션
+      - MARIADB_DATABASE=spring_order
+  backend:
+    build:
+      # backend앱의 빌드 컨텍스트 위치 지정
+      context: ./ordering
+      dockerfile: Dockerfile
+      # 실패하면 항상 재시작
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    environment:
+      # docker-compse에 네트워크를 결합했기 때문에 mydb라는 서비스명으로 host 호출 가능
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://mydb:3306/spring_order
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=1234
+    volumes:
+      # docker-compose의 특정경로의 image-path라는 이름으로 /tmp와 매핑
+      - image-path:/tmp
+      # # 직접 경로 매핑
+      # - C:/Users/PlayData/Desktop/tmp:/tmp
+    depends_on:
+      # mydb가 먼저 생성된 이후에 backend를 생성하겠다라는 선언
+      - mydb
+  frontend:
+    build:
+      # backend앱의 빌드 컨텍스트 위치 지정
+      context: ./ordering-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+volumes:
+  image-path:
